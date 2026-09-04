@@ -471,10 +471,10 @@ String sanitizeText(const String &in) {
     unsigned char c2 = (i + 2 < in.length()) ? (unsigned char)in[i + 2] : 0;
 
     if (c == 0xC2 && c1 == 0xB0) {
-      out += (char)247;
+      out += (char)248;
       i += 2;
     } else if (c == 0xC2 && c1 == 0xBA) {
-      out += (char)247;
+      out += (char)248;
       i += 2;
     } else if (c == 0xE2 && c1 == 0x80 && (c2 == 0x93 || c2 == 0x94)) {
       out += '-';
@@ -486,7 +486,7 @@ String sanitizeText(const String &in) {
       out += '"';
       i += 3;
     } else if (c == 176 || c == 247) {
-      out += (char)247;
+      out += (char)248;
       i++;
     } else if (c >= 32 && c <= 126) {
       out += (char)c;
