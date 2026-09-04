@@ -195,12 +195,16 @@ String clockText(bool blinkColon) {
   time_t nowt = time(nullptr);
   struct tm t;
   localtime_r(&nowt, &t);
+  int h12 = t.tm_hour % 12;
+  if (h12 == 0) {
+    h12 = 12;
+  }
   char buf[8];
   char sep = ':';
   if (blinkColon && (t.tm_sec % 2 == 0)) {
     sep = ' ';
   }
-  snprintf(buf, sizeof(buf), "%02d%c%02d", t.tm_hour, sep, t.tm_min);
+  snprintf(buf, sizeof(buf), "%d%c%02d", h12, sep, t.tm_min);
   return String(buf);
 }
 
