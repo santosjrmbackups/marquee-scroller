@@ -1,118 +1,175 @@
-# Marquee Scroller (Clock, Weather, News, and More)
+# OpenHAB MQTT LED Marquee
 
-## NOTICE
-The latest version of Marquee Scroller 3.01 works with **ESP8266 Core 3.0.2** -- if you are upgrading from Marquee Scroller 2.X version this may require you to enter in all your API Keys and settings.  Always meake sure you have coppied all your API keys somewhere before updating.  The ESP8266 Core 3.0.2 uses the newer FS (file system) that may require a fresh start on the configuration.
-Make sure you update to the latest version of WifiManager library (link below).
-* Removed Bitcoin features in 3.0
+ESP8266 firmware for a MAX7219 LED matrix that **only** joins Wi-Fi, talks MQTT, and renders text.
 
-## Features include:
-* Accurate Clock refresh off Internet Time Servers
-* Local Weather and conditions (refreshed every 10 - 30 minutes)
-* News Headlines from all the major sources
-* Configured through Web Interface
-* Display 3D print progress from your OctoPrint Server
-* Option to display Pi-hole status and graph (each pixel accross is 10 minutes)
-* Basic Authorization around Configuration web interface
-* Support for OTA (loading firmware over WiFi)
-* Update firmware through web interface
-* Configurable scroll speed
-* Configurable scrolling frequency
-* Configurable number of LED panels
-* Options of different types of Clock Displays (display seconds or temperature) -- only on 8 or more display panels
-* Video: https://youtu.be/DsThufRpoiQ
-* Build Video by Chris Riley: https://youtu.be/KqBiqJT9_lE
+**OpenHAB owns all content** — time strings, weather, temperatures, and item status. This device is not a content client.
 
-## Required Parts:
-* Wemos D1 Mini: https://amzn.to/3tMl81U
-* Dot Matrix Module: https://amzn.to/2HtnQlD  
+## Removed from the original Qrome marquee-scroller
 
-Note: Using the links provided here help to support these types of projects. Thank you for the support.  
+This fork **does not** include, compile, or configure:
 
-## Wiring for the Wemos D1 Mini to the Dot Matrix Display
-CLK -> D5 (SCK)  
-CS  -> D6  
-DIN -> D7 (MOSI)  
-VCC -> 5V+  
-GND -> GND-  
+- OpenWeatherMap
+- OctoPrint
+- Pi-hole
+- News API
+- TimeZoneDB / OpenWeather “city time”
 
-![Marquee Scroller Wiring](/images/marquee_scroller_pins.png)  
+There are no weather, printer, ad-block, or headline API keys.
 
-## 3D Printed Case by David Payne:  
-Original Single Panel version: https://www.thingiverse.com/thing:2867294  
-Double Wide LED version: https://www.thingiverse.com/thing:2989552  
+Upstream project: [Qrome/marquee-scroller](https://github.com/Qrome/marquee-scroller) (clock/weather/news firmware). This fork is an OpenHAB MQTT display.
 
-## Upgrading from version 2.5 or Higher
-In version 2.6 and higher, the binary files that can be uploaded to your marque scrolling clock via the web interface.  From the main menu in the web interface select "Firmware Update" and follow the prompts.
-* **marquee.ino.d1_mini_3.01.bin** - compiled for Wemos D1 Mini and standard 4x1 LED (default)
-* **marquee.ino.d1_mini_wide_3.01.bin** - compiled for Wemos D1 Mini and double wide 8x1 LED display
+## Hardware
 
-## Compiling and Loading to Wemos D1
-It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
-* USB CH340G drivers:  https://sparks.gogo.co.nz/ch340.html
-* Enter http://arduino.esp8266.com/stable/package_esp8266com_index.json into Additional Board Manager URLs field. You can add multiple URLs, separating them with commas.  This will add support for the Wemos D1 Mini to Arduino IDE.
-* Open Boards Manager from Tools > Board menu and install esp8266 Core platform version Latest **3.0.2**
-* Select Board:  "ESP8266 Boards (3.0.2)" --> "LOLIN(WEMOS) D1 R2 & mini"
-* Set Flash Size: 4MB (FS:1MB OTA:~1019KB) -- **this project requires FS for saving and reading configuration settings.**
-* Select the **Port** from the tools menu.  
+Do not change the wiring.
 
-## Loading Supporting Library Files in Arduino
-Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
-**Packages** -- the following packages and libraries are used (download and install):  
-<WiFiManager.h> --> https://github.com/tzapu/WiFiManager (latest)  
-<TimeLib.h> --> https://github.com/PaulStoffregen/Time  
-<Adafruit_GFX.h> --> https://github.com/adafruit/Adafruit-GFX-Library  
-<Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel  
-<JsonStreamingParser.h> --> https://github.com/squix78/json-streaming-parser  
+- Wemos D1 Mini / LOLIN D1 R2 & mini, ESP8266, **4MB flash**, **FS:1MB OTA:~1019KB**
+- MAX7219 daisy chain (default 4×1, configurable 1–16)
 
-Note ArduinoJson (version 5.13.1) is now included as a library file in version 2.7 and later.
+| Display | D1 Mini     |
+|---------|-------------|
+| CLK     | D5 (SCK)    |
+| CS      | D6          |
+| DIN     | D7 (MOSI)   |
+| VCC     | 5V          |
+| GND     | GND         |
 
-## Initial Configuration
-Editing the **Settings.h** file is totally optional and not required.  All API Keys are now managed in the Web Interface. It is not required to edit the Settings.h file before loading and running the code.  
-* Open Weather Map free API key: http://openweathermap.org/  -- this is used to get weather data and the latitude and longitude for the current time zone. Weather API key is required for correct time.
-* TimeZoneDB free registration for API key: https://timezonedb.com/register -- this is used for setting the time and getting the correct time zone as well as managing time changes due to Day Light Savings time by regions.  This key is set and managed only through the web interface and added in version 2.10 of Marquee Scroller. TimeZoneDB key is required for correct time display.
-* News API key (free): https://newsapi.org/ -- Optional if you want to get current news headlines.
-* Your OctoPrint API Key -- optional if you use the OctoPrint status.
-* Version 2.0 supports Chained 4x1 LED displays -- configure up to 16x1 in the Settings.h file.  
+![Wiring](images/marquee_scroller_pins.png)
 
-NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
+## What the ESP does
 
-## Web Interface
-The Marquee Scroller uses the **WiFiManager** so when it can't find the last network it was connected to 
-it will become a **AP Hotspot** -- connect to it with your phone and you can then enter your WiFi connection information.
+- Captive portal (WiFiManager) if it has no network
+- MQTT subscribe for text, mode, brightness, speed, enable
+- Scroll, center, or NTP `HH:MM` fallback
+- Web UI + OTA
+- Last text persisted on LittleFS (`/conf.txt`)
 
-After connected to your WiFi network it will display the IP addressed assigned to it and that can be 
-used to open a browser to the Web Interface.  You will be able to manage your API Keys through the web interface.  
-The default user / password for the configuration page is: admin / password  
+Idle clock uses `configTime()` and a POSIX timezone string (default `UTC0`). Send preformatted time in the MQTT text when OpenHAB should own the clock line.
 
-The Clock will display the time of the City selected for the weather.  
+## Arduino IDE flash
 
-<p align="center">
-  <img src="/images/2018-04-19%2006.58.05.png" width="200"/>
-  <img src="/images/2018-04-19%2006.58.15.png" width="200"/>
-  <img src="/images/2018-04-19%2006.58.32.png" width="200"/>
-  <img src="/images/2018-04-19%2006.58.58.png" width="200"/>
-</p>
+1. Board: **LOLIN(WEMOS) D1 R2 & mini**
+2. ESP8266 core **3.0.2** (3.1.x usually works)
+3. Flash size: **4MB (FS:1MB OTA:~1019KB)**
+4. Open `marquee/marquee.ino`
 
-## Donation or Tip
-Please do not feel obligated, but donations and tips are warmly welcomed.  I have added the donation button at the request of a few people that wanted to contribute and show appreciation.  Thank you, and enjoy the application and project.  
+Libraries:
 
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A82AT6FLN2MPY)
+- [WiFiManager](https://github.com/tzapu/WiFiManager) (tzapu, latest — not an old HTTP_HEAD fork)
+- [Adafruit GFX](https://github.com/adafruit/Adafruit-GFX-Library)
+- [Max72xxPanel](https://github.com/markruys/arduino-Max72xxPanel)
+- [PubSubClient](https://github.com/knolleary/pubsubclient)
 
-Or -- you can buy me something from my Amazon Wishlist: https://www.amazon.com/hz/wishlist/ls/GINC2PHRNEY3  
+`Settings.h` is first-boot defaults only. MQTT host default is **empty** (NTP clock until you set a broker). Default web user/password: `admin` / `password` (basic auth off until you enable it). Saving the form does not wipe `mqtt_*` or panel keys.
 
-## Contributors
-David Payne  
-Nathan Glaus  
-Daniel Eichhorn -- Author of the TimeClient class (in older versions)  
-yanvigdev  
-nashiko-s  
-magnum129  
+First boot: join AP **`MARQUEE-<chipid>`**, open `http://192.168.4.1`, enter Wi-Fi. The matrix then scrolls `v4.00 IP: …`. Use that IP for the config page.
 
-Contributing to this software is warmly welcomed. You can do this basically by forking from master, committing modifications and then making a pulling requests against the latest DEV branch to be reviewed (follow the links above for operating guide). Detailed comments are encouraged. Adding change log and your contact into file header is encouraged. Thanks for your contribution.
+## MQTT contract
 
-When considering making a code contribution, please keep in mind the following goals for the project:
-* User should not be required to edit the Settings.h file to compile and run.  This means the feature should be simple enough to manage through the web interface.
-* Changes should always support the recommended hardware (links above).
+Default prefix: `openhab/marquee`  
+Default clientId: `marquee-<chipid>`  
+Port **1883**. Empty user/pass = anonymous.
 
-![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg)  
-![Marquee Parts](/images/1ffa0c835554d280258c13be5513c4fe_preview_featured.jpg)
+### Subscribe
+
+| Topic | Payload |
+|-------|---------|
+| `openhab/marquee/text` and `…/text/set` | Plain text, or JSON `{"message":"..."}` / `{"text":"..."}` |
+| `openhab/marquee/clear` | Clears text (any payload) |
+| `openhab/marquee/mode` | `scroll` \| `center` \| `clock` |
+| `openhab/marquee/brightness` | `0`–`15` (values `16`–`100` mapped as percent) |
+| `openhab/marquee/speed` | Scroll delay ms, clamped 10–200 |
+| `openhab/marquee/enable` | `ON`/`OFF`/`1`/`0`/`true`/`false` |
+
+### Publish
+
+| Topic | Payload |
+|-------|---------|
+| `openhab/marquee/status` | Retained `online`; LWT `offline` |
+| `openhab/marquee/ip` | Retained LAN IP after connect |
+
+Display rules:
+
+- New text replaces the current payload, is saved to flash, and is shown immediately (max 240 chars).
+- Empty payload or `/clear` clears MQTT text.
+- `scroll` = marquee, `center` = static, `clock` = local NTP `HH:MM`.
+- Empty text with scroll/center → NTP clock if synced, else `OH wait`.
+- MQTT disabled or empty host → NTP clock only.
+- Broker down → last text or clock; reconnect backoff 2 / 5 / 15 / 30 s. The render loop is not blocked.
+- Unknown glyphs → `?`. `°` is mapped to a drawable stand-in.
+- MQTT + web + OTA are pumped while scrolling.
+
+## OpenHAB 4 / 5 copy-paste
+
+### Thing (`*.things`)
+
+```java
+Bridge mqtt:broker:mosquitto [ host="127.0.0.1", secure=false ] {
+    Thing topic marquee "LED Marquee" {
+        Channels:
+            Type string : text       [ commandTopic="openhab/marquee/text/set" ]
+            Type string : mode       [ commandTopic="openhab/marquee/mode" ]
+            Type dimmer : brightness [ commandTopic="openhab/marquee/brightness" ]
+            Type switch : enable     [ commandTopic="openhab/marquee/enable", on="ON", off="OFF" ]
+            Type string : status     [ stateTopic="openhab/marquee/status" ]
+    }
+}
+```
+
+Set `host` to your Mosquitto address if it is not on the OpenHAB machine.
+
+### Items (`*.items`)
+
+```java
+String Marquee_Text       { channel="mqtt:topic:mosquitto:marquee:text" }
+String Marquee_Mode       { channel="mqtt:topic:mosquitto:marquee:mode" }
+Dimmer Marquee_Brightness { channel="mqtt:topic:mosquitto:marquee:brightness" }
+Switch Marquee_Enable     { channel="mqtt:topic:mosquitto:marquee:enable" }
+String Marquee_Status     { channel="mqtt:topic:mosquitto:marquee:status" }
+```
+
+### JS Scripting rule
+
+Trigger on the items that should refresh the line, **and** every minute if you want a live clock in the same string:
+
+```javascript
+Marquee_Text.sendCommand("14:32  Out 18.4C Cloudy  In 21.2C  Garage CLOSED");
+```
+
+Example: build the string from your own Number/String/Contact items (weather, temperatures, garage). Do **not** point the ESP at OpenWeatherMap.
+
+Set mode once:
+
+```javascript
+Marquee_Mode.sendCommand("scroll");
+```
+
+## mosquitto_pub tests
+
+```bash
+mosquitto_pub -h BROKER -t openhab/marquee/text/set -m "Living 21.4C  Garage OPEN"
+mosquitto_pub -h BROKER -t openhab/marquee/mode -m center
+mosquitto_pub -h BROKER -t openhab/marquee/text/set -m ""
+```
+
+Anonymous broker: omit `-u` / `-P`. With auth: `-u USER -P PASS`.
+
+JSON is also accepted:
+
+```bash
+mosquitto_pub -h BROKER -t openhab/marquee/text/set -m '{"text":"Hall 20.1C"}'
+```
+
+## Web UI
+
+Single page at `http://<device-ip>/`:
+
+- Wi-Fi forget / factory reset
+- MQTT: enabled, host, port, user, password (blank keeps stored), clientId, prefix
+- Display: panel count, brightness, speed, mode, test text
+- NTP: enabled, POSIX TZ
+- OTA (`/update`), display on/off
+- Optional basic auth
+
+## License
+
+MIT. Original work by David Payne; this fork strips content APIs and adds the OpenHAB MQTT contract.
