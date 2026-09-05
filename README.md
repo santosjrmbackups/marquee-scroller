@@ -39,11 +39,15 @@ Do not change the wiring.
 
 - Captive portal (WiFiManager) if it has no network
 - MQTT subscribe for text, mode, brightness, speed, enable
-- Scroll, center, or NTP `HH:MM` fallback
-- Web UI + OTA
+- Optional HTTP JSON poll (Prometheus, Grafana proxy, OpenHAB REST, any JSON)
+- Optional `POST /ingest` webhook (Grafana Alerting, curl, Node-RED)
+- Scroll / center / NTP clock, playlist of extra lines
+- Web UI + OTA + mDNS `http://marquee.local`
 - Last text persisted on LittleFS (`/conf.txt`)
 
-Idle clock uses `configTime()` and a POSIX timezone string (default `UTC0`). Send preformatted time in the MQTT text when OpenHAB should own the clock line.
+Idle clock uses `configTime()` and a POSIX timezone string (default `UTC0`). Send preformatted time in MQTT or HTTP text when OpenHAB/Grafana should own the clock line.
+
+The ESP does **not** speak Grafana’s dashboard query API. It pulls a small JSON/text URL or accepts a webhook. Compose full sentences in OpenHAB, Grafana alert titles, or a tiny HTTP endpoint.
 
 ## Arduino IDE flash
 
@@ -61,7 +65,7 @@ Libraries:
 
 `Settings.h` is first-boot defaults only. MQTT host default is **empty** (NTP clock until you set a broker). Default web user/password: `admin` / `password` (basic auth off until you enable it). Saving the form does not wipe `mqtt_*` or panel keys.
 
-First boot: join AP **`MARQUEE-<chipid>`**, open `http://192.168.4.1`, enter Wi-Fi. The matrix then scrolls `v4.00 IP: …`. Use that IP for the config page.
+First boot: join AP **`MARQUEE-<chipid>`**, open `http://192.168.4.1`, enter Wi-Fi. The matrix then scrolls `v4.10 IP: …`. Then use `http://marquee.local` or the LAN IP.
 
 ## MQTT contract
 
@@ -93,10 +97,11 @@ Display rules:
 - Empty payload or `/clear` clears MQTT text.
 - `scroll` = marquee, `center` = static, `clock` = local NTP `HH:MM`.
 - Empty text with scroll/center → NTP clock if synced, else `OH wait`.
-- MQTT disabled or empty host → NTP clock only.
+- MQTT disabled or empty host → HTTP line and/or NTP clock.
 - Broker down → last text or clock; reconnect backoff 2 / 5 / 15 / 30 s. The render loop is not blocked.
 - Unknown glyphs → `?`. `°` is mapped to a drawable stand-in.
-- MQTT + web + OTA are pumped while scrolling.
+- MQTT + web + OTA + mDNS are pumped while scrolling.
+- Display line = MQTT text + HTTP poll text + playlist lines 2 and 3 (empty parts skipped).
 
 ## OpenHAB 4 / 5 copy-paste
 
@@ -161,14 +166,73 @@ mosquitto_pub -h BROKER -t openhab/marquee/text/set -m '{"text":"Hall 20.1C"}'
 
 ## Web UI
 
-Single page at `http://<device-ip>/`:
+`http://<device-ip>/` or `http://marquee.local`
 
-- Wi-Fi forget / factory reset
-- MQTT: enabled, host, port, user, password (blank keeps stored), clientId, prefix
-- Display: panel count, brightness, speed, mode, test text
-- NTP: enabled, POSIX TZ
-- OTA (`/update`), display on/off
-- Optional basic auth
+Live header: current line, MQTT/HTTP status, last error, RSSI, day/night brightness, next poll.
+
+- **Identify panels** — lights each MAX7219 module in order (module 1 first)
+- Display: rotation 0–3, reverse chain, invert, day/night brightness + schedule, speed, pause after scroll, direction, loop vs once-then-clock, mode, 12/24h, colon blink, MQTT text, playlist lines
+- MQTT (unchanged contract)
+- HTTP / Grafana poll + ingest token
+- NTP, OTA, forget Wi-Fi, factory reset, optional basic auth
+
+Saving does not wipe `mqtt_*`, HTTP, or panel keys. Blank passwords keep the stored value.
+
+## HTTP poll (universal JSON)
+
+LAN **HTTP only** (no TLS on this chip). Interval 15–300 s. Response capped at 3 KB.
+
+| Field | Example |
+|-------|---------|
+| URL | `http://prometheus:9090/api/v1/query?query=sensor_temp` |
+| JSON path | `data.result.0.value.1` (comma-separate up to 3 paths) |
+| Template | `Out {value}C` (`{value}`, `{value2}`, `{value3}`) |
+| On failure | keep last / clear / show `HTTP err` |
+
+Prometheus (simplest Grafana-adjacent source):
+
+```
+http://PROMETHEUS:9090/api/v1/query?query=weather_temp_c
+JSON path: data.result.0.value.1
+Template: Out {value}C
+```
+
+Grafana as a datasource **proxy** (same Prometheus JSON shape). Use an HTTP Grafana URL on the LAN, service account token as Bearer:
+
+```
+http://GRAFANA:3000/api/datasources/proxy/DS_ID/api/v1/query?query=weather_temp_c
+JSON path: data.result.0.value.1
+```
+
+`DS_ID` is the numeric datasource id (Grafana → Connections → your Prometheus → URL bar id). Do not use `/api/ds/query` dashboard frames; they are too large for the ESP.
+
+OpenHAB REST example: poll an item JSON and path `state`, template `{value}`.
+
+## Grafana webhook (push)
+
+Grafana **Alerting → Contact point → Webhook**:
+
+```
+http://192.168.1.216/ingest
+```
+
+If you set an ingest token in the UI:
+
+```
+http://192.168.1.216/ingest?token=YOURTOKEN
+```
+
+or header `Authorization: Bearer YOURTOKEN`.
+
+The firmware reads JSON `text`, then `message`, then `title` (Grafana alert title). Keep the contact-point message short.
+
+```bash
+curl -X POST http://192.168.1.216/ingest \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"14:32  Out 18.4C  Garage CLOSED\"}"
+```
+
+Prefer OpenHAB MQTT for the always-on line; use Grafana alerts for exceptions.
 
 ## License
 

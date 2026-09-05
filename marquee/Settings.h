@@ -8,7 +8,7 @@
  * CLK -> D5 (SCK)  CS -> D6  DIN -> D7 (MOSI)  VCC -> 5V  GND -> GND
  *
  * Values here are first-boot defaults only. After that, change settings in
- * the web UI. Use Reset Settings to return to these defaults.
+ * the web UI. Use Factory reset to return to these defaults.
  ******************************************************************************/
 
 #ifndef MARQUEE_SETTINGS_H
@@ -17,6 +17,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
+#include <ESP8266HTTPClient.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include <WiFiManager.h>
@@ -40,28 +41,51 @@ String www_password = "password";
 boolean ENABLE_OTA = true;
 String OTA_Password = "";
 
-// MAX7219
 const int pinCS = D6;
-int numberOfHorizontalDisplays = 4;  // 1–16, persisted; changing it reboots
+int numberOfHorizontalDisplays = 4;
 const int numberOfVerticalDisplays = 1;
-int ledRotation = 3;  // 3 = 90° CCW (typical 4-in-1 FC-16)
-int displayIntensity = 1;     // 0–15
-int displayScrollSpeed = 25;  // ms per pixel, clamped 10–200
+int ledRotation = 3;
+boolean reverseChain = false;
+boolean invertDisplay = false;
+int displayIntensity = 1;
+int nightIntensity = 0;
+String nightStart = "";
+String nightEnd = "";
+int displayScrollSpeed = 25;
+int scrollPauseSec = 0;
+boolean scrollLeft = true;
+boolean scrollLoop = true;
+boolean IS_24HOUR = true;
+boolean flashOnSeconds = true;
 
 boolean MQTT_ENABLED = true;
-String mqttHost = "";          // empty = MQTT off (NTP clock only)
+String mqttHost = "";
 int mqttPort = 1883;
 String mqttUser = "";
 String mqttPass = "";
-String mqttClientId = "";      // empty = marquee-<chipid>
+String mqttClientId = "";
 String mqttPrefix = "openhab/marquee";
 
 boolean ntpEnabled = true;
-String posixTZ = "UTC0";       // POSIX TZ; OpenHAB should send preformatted time in MQTT text
+String posixTZ = "UTC0";
 
-String marqueeMessage = "";    // last MQTT / test text, max 240
-String displayMode = "scroll"; // scroll | center | clock
+String marqueeMessage = "";
+String displayMode = "scroll";
 boolean displayOn = true;
+
+String playlist2 = "";
+String playlist3 = "";
+
+boolean httpPollEnabled = false;
+String httpUrl = "";
+int httpIntervalSec = 60;
+String httpJsonPath = "";
+String httpTemplate = "{value}";
+String httpUser = "";
+String httpPass = "";
+String httpBearer = "";
+String httpOnFail = "keep";
+String ingestToken = "";
 
 //******************************
 // End Settings
